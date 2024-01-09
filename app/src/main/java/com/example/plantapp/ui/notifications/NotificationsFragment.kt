@@ -78,14 +78,12 @@ class NotificationsFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
         binding.signOutButton.setOnClickListener {
             auth.signOut()
             val intent = Intent(context, LoginActivity::class.java)
             startActivity(intent)
             activity?.finish()
         }
-
     }
 
 }
