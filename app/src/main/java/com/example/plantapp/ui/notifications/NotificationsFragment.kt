@@ -50,7 +50,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.example.plantapp.LoginActivity
+import com.example.plantapp.ui.login.LoginActivity
 import com.example.plantapp.databinding.FragmentNotificationsBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
