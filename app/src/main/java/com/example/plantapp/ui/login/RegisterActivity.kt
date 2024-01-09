@@ -3,7 +3,6 @@ package com.example.plantapp.ui.login
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import com.example.plantapp.databinding.ActivityRegisterBinding
 import com.google.firebase.auth.FirebaseAuth
@@ -66,34 +65,25 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun saveUserNameToFirestore() {
         val user = auth.currentUser
-        try {
-            if (user != null && user.uid != null) {
-                val userId = user.uid
-                val userHashMap = hashMapOf<String, Any>()
-                userHashMap["username"] = binding.signupUsername.text.toString()
-                userHashMap["email"] = binding.signupEmail.text.toString()
-                userHashMap["phone"] = binding.signupPhone.text.toString()
+        if (user != null) {
+            val userId = user.uid
+            val userHashMap = hashMapOf<String, Any>()
+            userHashMap["username"] = binding.signupUsername.text.toString()
+            userHashMap["email"] = binding.signupEmail.text.toString()
+            userHashMap["phone"] = binding.signupPhone.text.toString()
 
-                // Kullanıcının UID'sini kullanarak belgeyi oluştur
-                db.collection("Users").document(userId).set(userHashMap)
-                    .addOnCompleteListener { task ->
-                        try {
-                            if (task.isSuccessful) {
-                                Toast.makeText(this, "User saved to firestore", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(this, "Failed to save user to firestore: ${task.exception}", Toast.LENGTH_SHORT).show()
-                            }
-                        } catch (e: Exception) {
-                            Log.e("PlantApp", "Unexpected error occurred", e)
-                        }
+            // Kullanıcının UID'sini kullanarak belgeyi oluştur
+            db.collection("Users").document(userId).set(userHashMap)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Toast.makeText(this, "User saved to firestore", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Failed to save user to firestore", Toast.LENGTH_SHORT).show()
                     }
-            } else {
-                Toast.makeText(this, "User or UID is null", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            Log.e("MyApp", "Unexpected error occurred", e)
+                }
         }
     }
+}
 /*
     private fun saveUserNameToFirestore() {
         val user = auth.currentUser
@@ -117,4 +107,3 @@ class RegisterActivity : AppCompatActivity() {
     }
 
  */
-}

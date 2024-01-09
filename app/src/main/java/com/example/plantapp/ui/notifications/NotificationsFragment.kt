@@ -24,7 +24,6 @@ import com.google.firebase.ktx.Firebase
 class NotificationsFragment : Fragment() {
     private lateinit var binding: FragmentNotificationsBinding
     private lateinit var auth: FirebaseAuth
-
     private lateinit var db : FirebaseFirestore
     private lateinit var sharedPreferences: SharedPreferences
 
@@ -106,7 +105,7 @@ class NotificationsFragment : Fragment() {
         val user = auth.currentUser
         if (user != null) {
             val userId = user.uid
-            Log.d("SettingFragment", "Current User ID: $userId")
+            Log.d("NotificationsFragment", "Current User ID: $userId")
 
             // SharedPreferences'ten bilgileri al
             val username = sharedPreferences.getString("username", "")
@@ -127,7 +126,7 @@ class NotificationsFragment : Fragment() {
                 binding.editTextNewEmail.isEnabled = false
             }
         } else {
-            Log.d("SettingFragment", "User is not signed in.")
+            Log.d("NotificationsFragment", "User is not signed in.")
         }
     }
 
@@ -155,12 +154,15 @@ class NotificationsFragment : Fragment() {
                     binding.editTextNewUsername.setText(username)
                     binding.editTextNewEmail.setText(email)
                     binding.editTextNewPhone.setText(phone)
+                    Log.d("EditTextDebug", "editTextNewUsername: ${binding.editTextNewUsername}")
+                    Log.d("EditTextDebug", "editTextNewPhone: ${binding.editTextNewPhone}")
+
                 } else {
-                    Log.d("SettingFragment", "No such document")
+                    Log.d("NotificationsFragment", "No such document")
                 }
             }
             .addOnFailureListener { exception ->
-                Log.w("SettingFragment", "get failed with ", exception)
+                Log.w("NotificationsFragment", "get failed with ", exception)
             }
     }
 
@@ -179,10 +181,10 @@ class NotificationsFragment : Fragment() {
                 .document(userId)
                 .update(userData as Map<String, Any>)
                 .addOnSuccessListener {
-                    Log.d("SettingFragment", "Bilgiler güncellendi.")
+                    Log.d("NotificationsFragment", "Bilgiler güncellendi.")
                 }
                 .addOnFailureListener { e ->
-                    Log.w("SettingFragment", "Bilgi güncelleme başarısız.", e)
+                    Log.w("NotificationsFragment", "Bilgi güncelleme başarısız.", e)
                 }
         }
     }
