@@ -55,6 +55,7 @@ class DashboardFragment : Fragment() {
         loadPlantListFromFirestore()
     }
 
+    //ner function to load plant list from Firestore
     private fun loadPlantListFromFirestore() {
         val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
