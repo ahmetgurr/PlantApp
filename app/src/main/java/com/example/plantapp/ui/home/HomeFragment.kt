@@ -114,37 +114,12 @@ class HomeFragment : Fragment() {
         // Button tıklandığında Firestore'a veri kaydet
         binding.btnSaveFirestore.setOnClickListener {
             // Bitki bilgilerini Firestore'a kaydet
-            savePlantToFirestore("Bitki Adı", "Bitki URL", "Diğer Alanlar")
+            savePlantToFirestore()
         }
 
     }
-/*
-    private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
-        // Firestore'a veri eklemek için bir Map oluştur
-        val plantData = hashMapOf(
-            "plantName" to plantName,
-            "imageUrl" to imageUrl,
-            "otherFields" to otherFields
-        )
 
-        // Firestore koleksiyon referansını belirle (örneğin, "Plants" koleksiyonu)
-        val plantsCollection = db.collection("Plants")
-
-        // Yeni belge eklemek için koleksiyona ekleme işlemi yap
-        plantsCollection.add(plantData)
-            .addOnSuccessListener { documentReference ->
-                // Başarılı bir şekilde eklenirse buraya gelir
-                Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
-                Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener { e ->
-                // Eklerken bir hata olursa buraya gelir
-                Log.w("Firestore", "Hata oluştu", e)
-                Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
-            }
-    }
-
- */
+    /*
 private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
     // Firestore'a veri eklemek için bir Map oluştur
     val plantData = hashMapOf(
@@ -180,6 +155,49 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
         Toast.makeText(requireContext(), "Kullanıcı girişi yapılı değil.", Toast.LENGTH_SHORT).show()
     }
 }
+
+
+     */
+
+    private fun savePlantToFirestore() {
+        // Kullanıcının UID'sini al
+        val userUid = FirebaseAuth.getInstance().currentUser?.uid
+
+        if (userUid != null) {
+            val plantName = outputTextView.text.toString()
+
+            if (plantName.isNotEmpty()) {
+                // Firestore koleksiyon referansını belirle ("Users" koleksiyonu)
+                val usersCollection = db.collection("Users")
+
+                // Kullanıcının altındaki "Plants" koleksiyon referansını belirle
+                val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
+
+                // Yeni belge eklemek için "Plants" koleksiyonuna ekleme işlemi yap
+                val plantData = hashMapOf(
+                    "plantName" to plantName,
+                    // Diğer alanları buraya ekleyebilirsiniz
+                )
+
+                userPlantsCollection.add(plantData)
+                    .addOnSuccessListener { documentReference ->
+                        // Başarılı bir şekilde eklenirse buraya gelir
+                        Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
+                        Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
+                    }
+                    .addOnFailureListener { e ->
+                        // Eklerken bir hata olursa buraya gelir
+                        Log.w("Firestore", "Hata oluştu", e)
+                        Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
+                    }
+            } else {
+                Toast.makeText(requireContext(), "Bitki adı boş olamaz.", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Log.e("Firestore", "Kullanıcı UID'si null. Kullanıcı girişi yapılı değil.")
+            Toast.makeText(requireContext(), "Kullanıcı girişi yapılı değil.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
 
     //request camera permission
