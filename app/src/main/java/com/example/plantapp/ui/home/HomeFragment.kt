@@ -145,19 +145,26 @@ class HomeFragment : Fragment() {
     }
 
  */
-    private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
-        // Firestore'a veri eklemek için bir Map oluştur
-        val plantData = hashMapOf(
-            "plantName" to plantName,
-            "imageUrl" to imageUrl,
-            "otherFields" to otherFields
-        )
+private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
+    // Firestore'a veri eklemek için bir Map oluştur
+    val plantData = hashMapOf(
+        "plantName" to plantName,
+        "imageUrl" to imageUrl,
+        "otherFields" to otherFields
+    )
 
-        // Firestore koleksiyon referansını belirle (örneğin, "Plants" koleksiyonu)
-        val plantsCollection = db.collection("Plants")
+    // Kullanıcının UID'sini al
+    val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
-        // Yeni belge eklemek için koleksiyona ekleme işlemi yap
-        plantsCollection.add(plantData)
+    if (userUid != null) {
+        // Firestore koleksiyon referansını belirle ("Users" koleksiyonu)
+        val usersCollection = db.collection("Users")
+
+        // Kullanıcının altındaki "Plants" koleksiyon referansını belirle
+        val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
+
+        // Yeni belge eklemek için "Plants" koleksiyonuna ekleme işlemi yap
+        userPlantsCollection.add(plantData)
             .addOnSuccessListener { documentReference ->
                 // Başarılı bir şekilde eklenirse buraya gelir
                 Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
@@ -168,8 +175,11 @@ class HomeFragment : Fragment() {
                 Log.w("Firestore", "Hata oluştu", e)
                 Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
             }
+    } else {
+        Log.e("Firestore", "Kullanıcı UID'si null. Kullanıcı girişi yapılı değil.")
+        Toast.makeText(requireContext(), "Kullanıcı girişi yapılı değil.", Toast.LENGTH_SHORT).show()
     }
-
+}
 
 
     //request camera permission
