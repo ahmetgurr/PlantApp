@@ -19,8 +19,8 @@
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="ImageContrastCheck"
-        app:srcCompat="@drawable/logoscan"/>
+        app:srcCompat="@drawable/logoscan"
+        tools:ignore="ImageContrastCheck" />
 
     <Button
         android:id="@+id/btnLoadImage"
@@ -89,6 +89,17 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.5" />
+
+    <Button
+        android:id="@+id/btnSaveFirestore"
+        android:layout_width="120dp"
+        android:layout_height="51dp"
+        android:layout_marginBottom="52dp"
+        android:text="Save Plant"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.579"
+        app:layout_constraintStart_toEndOf="@+id/textView" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

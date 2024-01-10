@@ -3,6 +3,7 @@ package com.example.plantapp.ui.home
 
 import android.app.Activity
 import android.content.ContentValues
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -26,6 +27,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.plantapp.databinding.FragmentHomeBinding
 import com.example.plantapp.ml.AutoModel3
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import org.tensorflow.lite.support.image.TensorImage
 import java.io.IOException
 
@@ -35,6 +38,14 @@ class HomeFragment : Fragment() {
     private lateinit var button: Button
     private lateinit var outputTextView: TextView
     private var GALLERY_REQUEST_CODE = 123
+
+    private lateinit var db: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
+
+    val plantName = "examplePlantName"
+    val plantImageUrl = "exampleImageUrl"
+    val otherFields = "exampleOtherFields"
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -46,6 +57,8 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        db = FirebaseFirestore.getInstance()
 
         imageView = binding.imageView
         button = binding.bntCaptureImage
@@ -96,7 +109,68 @@ class HomeFragment : Fragment() {
             requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return@setOnLongClickListener true
         }
+
+        //
+        // Button tıklandığında Firestore'a veri kaydet
+        binding.btnSaveFirestore.setOnClickListener {
+            // Bitki bilgilerini Firestore'a kaydet
+            savePlantToFirestore("Bitki Adı", "Bitki URL", "Diğer Alanlar")
+        }
+
     }
+/*
+    private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
+        // Firestore'a veri eklemek için bir Map oluştur
+        val plantData = hashMapOf(
+            "plantName" to plantName,
+            "imageUrl" to imageUrl,
+            "otherFields" to otherFields
+        )
+
+        // Firestore koleksiyon referansını belirle (örneğin, "Plants" koleksiyonu)
+        val plantsCollection = db.collection("Plants")
+
+        // Yeni belge eklemek için koleksiyona ekleme işlemi yap
+        plantsCollection.add(plantData)
+            .addOnSuccessListener { documentReference ->
+                // Başarılı bir şekilde eklenirse buraya gelir
+                Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
+                Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                // Eklerken bir hata olursa buraya gelir
+                Log.w("Firestore", "Hata oluştu", e)
+                Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+ */
+    private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
+        // Firestore'a veri eklemek için bir Map oluştur
+        val plantData = hashMapOf(
+            "plantName" to plantName,
+            "imageUrl" to imageUrl,
+            "otherFields" to otherFields
+        )
+
+        // Firestore koleksiyon referansını belirle (örneğin, "Plants" koleksiyonu)
+        val plantsCollection = db.collection("Plants")
+
+        // Yeni belge eklemek için koleksiyona ekleme işlemi yap
+        plantsCollection.add(plantData)
+            .addOnSuccessListener { documentReference ->
+                // Başarılı bir şekilde eklenirse buraya gelir
+                Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
+                Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                // Eklerken bir hata olursa buraya gelir
+                Log.w("Firestore", "Hata oluştu", e)
+                Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+
 
     //request camera permission
     private val requestPermission =
