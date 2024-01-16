@@ -4,6 +4,7 @@ package com.example.plantapp.ui.home
 import android.app.Activity
 import android.content.ContentValues
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -24,13 +25,17 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import com.example.plantapp.databinding.FragmentHomeBinding
 import com.example.plantapp.ml.AutoModel3
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.tensorflow.lite.support.image.TensorImage
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 
 class HomeFragment : Fragment() {
     private lateinit var binding: FragmentHomeBinding
@@ -119,46 +124,6 @@ class HomeFragment : Fragment() {
 
     }
 
-    /*
-private fun savePlantToFirestore(plantName: String, imageUrl: String, otherFields: String) {
-    // Firestore'a veri eklemek için bir Map oluştur
-    val plantData = hashMapOf(
-        "plantName" to plantName,
-        "imageUrl" to imageUrl,
-        "otherFields" to otherFields
-    )
-
-    // Kullanıcının UID'sini al
-    val userUid = FirebaseAuth.getInstance().currentUser?.uid
-
-    if (userUid != null) {
-        // Firestore koleksiyon referansını belirle ("Users" koleksiyonu)
-        val usersCollection = db.collection("Users")
-
-        // Kullanıcının altındaki "Plants" koleksiyon referansını belirle
-        val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
-
-        // Yeni belge eklemek için "Plants" koleksiyonuna ekleme işlemi yap
-        userPlantsCollection.add(plantData)
-            .addOnSuccessListener { documentReference ->
-                // Başarılı bir şekilde eklenirse buraya gelir
-                Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
-                Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener { e ->
-                // Eklerken bir hata olursa buraya gelir
-                Log.w("Firestore", "Hata oluştu", e)
-                Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
-            }
-    } else {
-        Log.e("Firestore", "Kullanıcı UID'si null. Kullanıcı girişi yapılı değil.")
-        Toast.makeText(requireContext(), "Kullanıcı girişi yapılı değil.", Toast.LENGTH_SHORT).show()
-    }
-}
-
-
-     */
-
     private fun savePlantToFirestore() {
         // Kullanıcının UID'sini al
         val userUid = FirebaseAuth.getInstance().currentUser?.uid
@@ -167,29 +132,33 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
             val plantName = outputTextView.text.toString()
 
             if (plantName.isNotEmpty()) {
-                // Firestore koleksiyon referansını belirle ("Users" koleksiyonu)
                 val usersCollection = db.collection("Users")
-
-                // Kullanıcının altındaki "Plants" koleksiyon referansını belirle
                 val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
 
-                // Yeni belge eklemek için "Plants" koleksiyonuna ekleme işlemi yap
-                val plantData = hashMapOf(
-                    "plantName" to plantName,
-                    // Diğer alanları buraya ekleyebilirsiniz
-                )
+                // Resmin URI'sini al
+                val imageUri = getImageUriFromImageView(imageView)
 
-                userPlantsCollection.add(plantData)
-                    .addOnSuccessListener { documentReference ->
-                        // Başarılı bir şekilde eklenirse buraya gelir
-                        Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
-                        Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
-                    }
-                    .addOnFailureListener { e ->
-                        // Eklerken bir hata olursa buraya gelir
-                        Log.w("Firestore", "Hata oluştu", e)
-                        Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
-                    }
+                if (imageUri != null) {
+                    // "Plants" koleksiyonuna ekleme işlemi yap
+                    val plantData = hashMapOf(
+                        "plantName" to plantName,
+                        "imageUrl" to imageUri.toString()
+                    )
+
+                    userPlantsCollection.add(plantData)
+                        .addOnSuccessListener { documentReference ->
+                            // Başarılı bir şekilde eklenirse buraya gelir
+                            Log.d("Firestore", "Bitki başarıyla eklendi. Belge ID: ${documentReference.id}")
+                            Toast.makeText(requireContext(), "Bitki başarıyla kaydedildi.", Toast.LENGTH_SHORT).show()
+                        }
+                        .addOnFailureListener { e ->
+                            // Eklerken bir hata olursa buraya gelir
+                            Log.w("Firestore", "Hata oluştu", e)
+                            Toast.makeText(requireContext(), "Bitki kaydedilirken bir hata oluştu.", Toast.LENGTH_SHORT).show()
+                        }
+                } else {
+                    Toast.makeText(requireContext(), "Resim seçilmedi.", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Toast.makeText(requireContext(), "Bitki adı boş olamaz.", Toast.LENGTH_SHORT).show()
             }
@@ -199,8 +168,39 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
         }
     }
 
+    private fun getImageUriFromImageView(imageView: ImageView): Uri? {
+        val drawable = imageView.drawable
 
-    //request camera permission
+        if (drawable is BitmapDrawable) {
+            val bitmap = drawable.bitmap
+
+            // Bitmap'i dosyaya yaz ve dosyanın URI'sini al
+            return saveBitmapAndGetUri(requireContext(), bitmap)
+        }
+
+        return null
+    }
+
+    private fun saveBitmapAndGetUri(context: Context, bitmap: Bitmap): Uri {
+        val imagesFolder = File(context.cacheDir, "images")
+        imagesFolder.mkdirs()
+
+        val file = File(imagesFolder, "plant_image_${System.currentTimeMillis()}.png")
+
+        try {
+            val stream: OutputStream = FileOutputStream(file)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            stream.flush()
+            stream.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+        return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+    }
+
+
+    //Kamera izni
     private val requestPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -210,8 +210,7 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
                     .show()
             }
         }
-
-    //launch camera and take picture
+    //Kameradan resim alma
     private val takePicturePreview =
         registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
             if (bitmap != null) {
@@ -219,14 +218,13 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
                 outputGenerator(bitmap)
             }
         }
-
     //get image
     private val onResult =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             Log.i("TAG", "This is the result: ${result.data} ${result.resultCode}")
             onResultRecived(GALLERY_REQUEST_CODE, result)
         }
-
+    //get image result
     private fun onResultRecived(requestCode: Int, result: ActivityResult?) {
         when (requestCode) {
             GALLERY_REQUEST_CODE -> {
@@ -244,7 +242,7 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
             }
         }
     }
-
+    //Output generator
     private fun outputGenerator(bitmap: Bitmap) {
         //declaring tensorflow lite model veriable
         val plantmodel = AutoModel3.newInstance(requireContext())
@@ -269,8 +267,7 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
         // Releases model resources if no longer used.
         plantmodel.close()
     }
-
-    //to download to device
+    //cihaza indirme
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
@@ -292,8 +289,7 @@ private fun savePlantToFirestore(plantName: String, imageUrl: String, otherField
                 ).show()
             }
         }
-
-    //fun that takes a bitmap and store to user's device
+    //Bitmap'i alıp kullanıcının cihazına kaydeden fonksiyon
     private fun downloadImage(mBitmap: Bitmap): Uri? {
         val contentValues = ContentValues().apply {
             put(

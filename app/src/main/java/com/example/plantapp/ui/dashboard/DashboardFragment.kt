@@ -110,6 +110,7 @@ class DashboardFragment : Fragment() {
             val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
 
             // Snapshot listener ekleyerek, veride herhangi bir değişiklik olduğunda tetiklenir.
+            // Listeyi güncellemek için kullanılır. (Yeni bitki ekleme, bitki silme, bitki güncellemeden sonra)
             userPlantsCollection.addSnapshotListener { result, exception ->
                 if (exception != null) {
                     Log.w("Firestore", "Listen failed", exception)
@@ -140,7 +141,7 @@ class DashboardFragment : Fragment() {
     }
 
 
-
+    // Firestore'da belgedeki resim URL'sini güncellemek için kullanılan fonksiyon / resim eklemek için kullanılan fonksiyon
     private fun updatePlantImage(position: Int, imageUri: Uri) {
         val userUid = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -189,6 +190,7 @@ class DashboardFragment : Fragment() {
         }
     }
 
+    //Firestore'dan bitkiyi silmek için kullanılan fonksiyon
     private fun deletePlant(plant: Plant) {
         Log.d("DeletePlant", "Delete Plant function started.")
         val userId = FirebaseAuth.getInstance().currentUser?.uid
