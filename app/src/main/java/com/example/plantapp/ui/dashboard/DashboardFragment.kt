@@ -1,27 +1,21 @@
 package com.example.plantapp.ui.dashboard
 
 import android.app.Activity
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.plantapp.R
 import com.example.plantapp.adapter.PlantRecyclerAdapter
 import com.example.plantapp.databinding.FragmentDashboardBinding
-import com.example.plantapp.databinding.FragmentNotificationsBinding
 import com.example.plantapp.model.Plant
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -33,7 +27,6 @@ class DashboardFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var plantRecyclerAdapter: PlantRecyclerAdapter
     private lateinit var binding: FragmentDashboardBinding
-    private lateinit var selectedImageView: ImageView
     // Galeriye gitmek için kullanılacak request code
     private val GALLERY_REQUEST_CODE = 123
 
@@ -61,9 +54,14 @@ class DashboardFragment : Fragment() {
 
         // RecyclerView ve adapter'ı başlat
         recyclerView = view.findViewById(R.id.recyclerView)
-        plantRecyclerAdapter = PlantRecyclerAdapter(requireContext(), plantList)
+        plantRecyclerAdapter = PlantRecyclerAdapter(requireContext(), plantList, this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = plantRecyclerAdapter
+
+        plantRecyclerAdapter.setOnDeleteClickListener { position ->
+            val plant = plantList[position]
+            deletePlant(plant)
+        }
 
         // Firestore'dan bitki listesini al ve RecyclerView'a ayarla
         loadPlantListFromFirestore()
@@ -73,8 +71,6 @@ class DashboardFragment : Fragment() {
         plantRecyclerAdapter.setOnItemClickListener { position ->
             // Seçilen bitkinin pozisyonunu güncelle
             selectedPlantPosition = position
-
-
             // Galeriye gidip resim seçme işlemi için fonksiyonu çağır
             openGalleryForImage()
         }
@@ -113,8 +109,14 @@ class DashboardFragment : Fragment() {
             val usersCollection = db.collection("Users")
             val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
 
-            userPlantsCollection.get()
-                .addOnSuccessListener { result ->
+            // Snapshot listener ekleyerek, veride herhangi bir değişiklik olduğunda tetiklenir.
+            userPlantsCollection.addSnapshotListener { result, exception ->
+                if (exception != null) {
+                    Log.w("Firestore", "Listen failed", exception)
+                    return@addSnapshotListener
+                }
+
+                if (result != null) {
                     plantList.clear()
 
                     for (document in result) {
@@ -130,14 +132,13 @@ class DashboardFragment : Fragment() {
 
                     plantRecyclerAdapter.notifyDataSetChanged()
                 }
-                .addOnFailureListener { exception ->
-                    Log.w("Firestore", "Error getting documents.", exception)
-                }
+            }
         } else {
             Log.e("Firestore", "Kullanıcı UID'si null. Kullanıcı girişi yapılı değil.")
             Toast.makeText(requireContext(), "Kullanıcı girişi yapılı değil.", Toast.LENGTH_SHORT).show()
         }
     }
+
 
 
     private fun updatePlantImage(position: Int, imageUri: Uri) {
@@ -153,9 +154,9 @@ class DashboardFragment : Fragment() {
             // Yeni resim Uri'sini belgeye ekle
             selectedPlant.imageUrl = imageUri.toString()
 
-            // Resim olmayan veriyi temizle
-            selectedPlant.plantName = ""
-            selectedPlant.otherFields = ""
+            // Güncellenen değerleri belgeye eşitle
+            selectedPlant.plantName = selectedPlant.plantName
+            selectedPlant.otherFields = selectedPlant.otherFields
 
             // Firestore'daki belgeyi güncelle
             userPlantsCollection.document(selectedPlant.documentId)
@@ -188,6 +189,34 @@ class DashboardFragment : Fragment() {
         }
     }
 
+    private fun deletePlant(plant: Plant) {
+        Log.d("DeletePlant", "Delete Plant function started.")
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val passengersCollection = FirebaseFirestore.getInstance()
+            .collection("Users")
+            .document(userId!!)
+            .collection("Plants")
 
+        plant.documentId?.let { documentId ->
+            Log.d("DeletePlant", "Plant ID: $documentId")
+            passengersCollection.document(documentId).delete()
+                .addOnSuccessListener {
+                    Log.d("DeletePlant", "Successfully deleted plant.")
+                    // Firestore'dan başarıyla silindi
 
+                    // Silinen yolcuyu güncelleyerek RecyclerView'ı güncelleyin
+                    //val updatedPlant = plantRecyclerAdapter.passengerList.toMutableList()
+                    val updatedPlant = plantList.toMutableList()
+                    updatedPlant.remove(plant)
+                    //plantRecyclerAdapter.submitList(updatedPlant)
+                    plantList = updatedPlant
+                    Toast.makeText(requireContext(), "Plant successfully deleted", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    // Firestore'dan silme işlemi başarısız oldu
+                    Log.e("DeletePlant", "Error deleting plant", it)
+                    Toast.makeText(requireContext(), "The plant could not be deleted!", Toast.LENGTH_SHORT).show()
+                }
+        }
+    }
 }
