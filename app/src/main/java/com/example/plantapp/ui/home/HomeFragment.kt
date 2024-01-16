@@ -45,11 +45,6 @@ class HomeFragment : Fragment() {
     private var GALLERY_REQUEST_CODE = 123
 
     private lateinit var db: FirebaseFirestore
-    private lateinit var auth: FirebaseAuth
-
-    val plantName = "examplePlantName"
-    val plantImageUrl = "exampleImageUrl"
-    val otherFields = "exampleOtherFields"
 
 
     override fun onCreateView(
@@ -71,7 +66,7 @@ class HomeFragment : Fragment() {
         val buttonLoad = binding.btnLoadImage
 
         //take image button
-        button.setOnClickListener {
+        binding.bntCaptureImage.setOnClickListener {
             if (ContextCompat.checkSelfPermission(
                     requireContext(),
                     android.Manifest.permission.CAMERA
@@ -101,29 +96,26 @@ class HomeFragment : Fragment() {
                 requestPermission.launch(android.Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
-
         //to redirect user to google search for the scientific name
         outputTextView.setOnClickListener {
             val intent =
                 Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=${outputTextView.text}"))
             startActivity(intent)
         }
-
         //to download image when longPress on ImageView
         imageView.setOnLongClickListener {
             requestPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
             return@setOnLongClickListener true
         }
 
-        //
         // Button tıklandığında Firestore'a veri kaydet
         binding.btnSaveFirestore.setOnClickListener {
             // Bitki bilgilerini Firestore'a kaydet
             savePlantToFirestore()
         }
-
     }
 
+    //Firestore'a veri kaydetme (taranan bitki adı ve resmi kaydediyor)
     private fun savePlantToFirestore() {
         // Kullanıcının UID'sini al
         val userUid = FirebaseAuth.getInstance().currentUser?.uid
@@ -167,26 +159,21 @@ class HomeFragment : Fragment() {
             Toast.makeText(requireContext(), "Kullanıcı girişi yapılı değil.", Toast.LENGTH_SHORT).show()
         }
     }
-
+    //ImageView'dan Uri almak için (savePlantToFirestore içeriisnde kullanımak için bu fonksiyonu oluşturduk)
     private fun getImageUriFromImageView(imageView: ImageView): Uri? {
         val drawable = imageView.drawable
-
         if (drawable is BitmapDrawable) {
             val bitmap = drawable.bitmap
-
             // Bitmap'i dosyaya yaz ve dosyanın URI'sini al
             return saveBitmapAndGetUri(requireContext(), bitmap)
         }
-
         return null
     }
-
+    //Bitmap'i dosyaya yaz ve dosyanın URI'sini al(savePlantToFirestore içeriisnde kullanımak için bu fonksiyonu oluşturduk)
     private fun saveBitmapAndGetUri(context: Context, bitmap: Bitmap): Uri {
         val imagesFolder = File(context.cacheDir, "images")
         imagesFolder.mkdirs()
-
         val file = File(imagesFolder, "plant_image_${System.currentTimeMillis()}.png")
-
         try {
             val stream: OutputStream = FileOutputStream(file)
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
@@ -195,7 +182,6 @@ class HomeFragment : Fragment() {
         } catch (e: IOException) {
             e.printStackTrace()
         }
-
         return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
     }
 
