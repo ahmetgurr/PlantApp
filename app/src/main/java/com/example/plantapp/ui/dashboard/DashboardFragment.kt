@@ -160,7 +160,6 @@ class DashboardFragment : Fragment() {
 
             // Güncellenen değerleri belgeye eşitle
             selectedPlant.plantName = selectedPlant.plantName
-            selectedPlant.otherFields = selectedPlant.otherFields
 
             // Firestore'daki belgeyi güncelle
             userPlantsCollection.document(selectedPlant.documentId)
@@ -259,8 +258,6 @@ class DashboardFragment : Fragment() {
                     // Firestore'dan belge çekildiğinde
                     val plantFromFirestore = document.toObject(Plant::class.java)
                     if (plantFromFirestore != null) {
-                        // selectedDays'i days ile eşitle
-                        plantFromFirestore.selectedDays = plantFromFirestore.days.toMutableList()
 
                         // Yeni günleri belgeye ekle
                         plantFromFirestore.selectedDays = selectedDays
