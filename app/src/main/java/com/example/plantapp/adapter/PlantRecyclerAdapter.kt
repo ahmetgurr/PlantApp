@@ -5,7 +5,9 @@ import com.example.plantapp.model.Plant
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageView
+import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -16,7 +18,8 @@ import com.example.plantapp.ui.dashboard.DashboardFragment
 class PlantRecyclerAdapter(
     private val context: Context,
     private val plantList: List<Plant>,
-    var listener: DashboardFragment
+    var listener: DashboardFragment,
+    private val dashboardFragment: DashboardFragment
 ) : RecyclerView.Adapter<PlantRecyclerAdapter.PlantViewHolder>() {
 
     class PlantViewHolder(val binding: PlantListItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -61,6 +64,33 @@ class PlantRecyclerAdapter(
         holder.binding.btnDeletePlant.setOnClickListener {
             onDeleteClickListener?.invoke(position)
         }
+
+        //basınca genişleyen layout
+        holder.binding.linearLayoutArrowDown.setOnClickListener {
+            // Tıklanan öğenin durumunu kontrol et
+            if (holder.binding.expandedLayout.visibility == View.GONE) {
+                // Genişletilecek bölüm gizliyse, görünür yap
+                holder.binding.expandedLayout.visibility = View.VISIBLE
+            } else {
+                // Genişletilecek bölüm görünürse, gizle
+                holder.binding.expandedLayout.visibility = View.GONE
+            }
+        }
+
+        // CheckBox'ların durumunu ayarla
+        setCheckBoxesState(holder.binding.radioGroupDays, currentPlant.selectedDays)
+
+        holder.binding.btnUpdateDays.setOnClickListener {
+            val selectedDays = listener.getSelectedDaysFromCheckBoxes(holder.binding.radioGroupDays)
+            currentPlant.selectedDays = selectedDays
+            listener.updatePlantDays(position, selectedDays)
+        }
     }
 
+    private fun setCheckBoxesState(radioGroup: RadioGroup, selectedDays: List<String>) {
+        for (i in 0 until radioGroup.childCount) {
+            val checkBox = radioGroup.getChildAt(i) as? CheckBox
+            checkBox?.isChecked = selectedDays.contains(checkBox?.text.toString())
+        }
+    }
 }

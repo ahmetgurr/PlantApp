@@ -8,7 +8,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -54,7 +57,7 @@ class DashboardFragment : Fragment() {
 
         // RecyclerView ve adapter'ı başlat
         recyclerView = view.findViewById(R.id.recyclerView)
-        plantRecyclerAdapter = PlantRecyclerAdapter(requireContext(), plantList, this)
+        plantRecyclerAdapter = PlantRecyclerAdapter(requireContext(), plantList, this, this)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = plantRecyclerAdapter
 
@@ -221,4 +224,79 @@ class DashboardFragment : Fragment() {
                 }
         }
     }
+
+
+    fun getSelectedDaysFromCheckBoxes(radioGroup: RadioGroup): List<String> {
+        val selectedDays = mutableListOf<String>()
+
+        for (i in 0 until radioGroup.childCount) {
+            val checkBox = radioGroup.getChildAt(i) as? CheckBox
+            if (checkBox?.isChecked == true) {
+                selectedDays.add(checkBox.text.toString())
+            }
+        }
+
+        return selectedDays
+    }
+
+
+    // Firestore'da günleri güncellemek için fonksiyon
+    // Firestore'da günleri güncellemek için fonksiyon
+    fun updatePlantDays(position: Int, selectedDays: List<String>) {
+        val userUid = FirebaseAuth.getInstance().currentUser?.uid
+
+        if (userUid != null) {
+            val usersCollection = db.collection("Users")
+            val userPlantsCollection = usersCollection.document(userUid).collection("Plants")
+
+            // Seçilen bitkinin pozisyonundaki belgeyi al
+            val selectedPlant = plantList[position]
+
+            // Firestore'dan belge çekildiğinde selectedDays'i güncelle
+            userPlantsCollection.document(selectedPlant.documentId)
+                .get()
+                .addOnSuccessListener { document ->
+                    // Firestore'dan belge çekildiğinde
+                    val plantFromFirestore = document.toObject(Plant::class.java)
+                    if (plantFromFirestore != null) {
+                        // selectedDays'i days ile eşitle
+                        plantFromFirestore.selectedDays = plantFromFirestore.days.toMutableList()
+
+                        // Yeni günleri belgeye ekle
+                        plantFromFirestore.selectedDays = selectedDays
+
+                        // Firestore'daki belgeyi güncelle
+                        userPlantsCollection.document(selectedPlant.documentId)
+                            .set(plantFromFirestore)
+                            .addOnSuccessListener {
+                                // Başarılı bir şekilde güncellenirse buraya gelir
+                                Log.d("Firestore", "Bitki günleri güncellendi.")
+                                Toast.makeText(
+                                    context,
+                                    "Bitki günleri başarıyla güncellendi.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            .addOnFailureListener { e ->
+                                // Güncellenirken bir hata olursa buraya gelir
+                                Log.w("Firestore", "Hata oluştu", e)
+                                Toast.makeText(
+                                    context,
+                                    "Bitki günleri güncellenirken bir hata oluştu.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                }
+        } else {
+            Log.e("Firestore", "Kullanıcı UID'si null. Kullanıcı girişi yapılı değil.")
+            Toast.makeText(
+                context,
+                "Kullanıcı girişi yapılı değil.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+
 }
